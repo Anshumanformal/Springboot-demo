@@ -1,0 +1,17 @@
+{
+    "image":"mcr.microsoft.com/devcontainers/universal:2",
+    "customizations": {
+        "vscode": {
+            "settings": {
+                "java.server.launchMode": "Standard"
+            },
+            "extensions": [
+                "vscjava.vscode-java-pack",
+                "vmware.vscode-boot-dev-pack",
+                "cweijan.vscode-mysql-client2",
+                "redhat.java",
+                "redhat.fabric8-analytics"
+            ]
+        }
+    }
+}
