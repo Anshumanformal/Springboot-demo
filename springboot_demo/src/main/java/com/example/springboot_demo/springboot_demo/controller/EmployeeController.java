@@ -34,6 +34,7 @@ public class EmployeeController {
     // CRUD APIs for employee
     @PostMapping
     public ResponseEntity<Employee> saveEmployee(@RequestBody Employee employee) {
+        System.out.println("Employee data saved successfully");
         return new ResponseEntity<Employee>(employeeService.saveEmployee(employee), HttpStatus.CREATED);
     }
     
