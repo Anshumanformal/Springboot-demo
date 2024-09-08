@@ -2,6 +2,6 @@
 
 docker-compose up -d
 
-// Script to stop the docker-compose file in daemon mode. This will disconnect the server from the database.
+// Script to stop the docker-compose file. This will disconnect the server from the database.
 
 docker-compose down
