@@ -5,7 +5,7 @@
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>3.3.2</version>
+		<version>3.3.4</version>
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>com.example.springboot_demo</groupId>
@@ -51,6 +51,91 @@
 			<artifactId>mysql-connector-java</artifactId>
 			<version>8.0.33</version>
 		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-security</artifactId>
+		</dependency>
+
+		<dependency>
+        <groupId>jakarta.validation</groupId>
+        <artifactId>jakarta.validation-api</artifactId>
+        <version>3.0.2</version>
+    </dependency>
+
+	<!-- Hibernate Validator (Jakarta EE 9 compatible) -->
+    <dependency>
+        <groupId>org.hibernate.validator</groupId>
+        <artifactId>hibernate-validator</artifactId>
+        <version>8.0.0.Final</version>
+    </dependency>
+
+    <!-- Spring Boot Starter Web (if not already included) -->
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+
+	<!-- Swagger Annotations -->
+    <dependency>
+        <groupId>io.swagger.core.v3</groupId>
+        <artifactId>swagger-annotations</artifactId>
+        <version>2.2.15</version> <!-- Make sure the version is up to date -->
+    </dependency>
+
+    <!-- Swagger Core -->
+    <dependency>
+        <groupId>io.swagger.core.v3</groupId>
+        <artifactId>swagger-core</artifactId>
+        <version>2.2.15</version>
+    </dependency>
+
+	<!-- Jakarta Mail -->
+    <dependency>
+        <groupId>com.sun.mail</groupId>
+        <artifactId>jakarta.mail</artifactId>
+        <version>2.0.1</version>
+    </dependency>
+
+	<!-- Spring Mail -->
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-mail</artifactId>
+    </dependency>
+
+    <!-- Spring Retry -->
+    <dependency>
+        <groupId>org.springframework.retry</groupId>
+        <artifactId>spring-retry</artifactId>
+    </dependency>
+
+    <!-- Spring Scheduling -->
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter</artifactId>
+    </dependency>
+
+	<!-- JJWT Library -->
+    <dependency>
+        <groupId>io.jsonwebtoken</groupId>
+        <artifactId>jjwt-api</artifactId>
+        <version>0.11.5</version>
+    </dependency>
+
+    <dependency>
+        <groupId>io.jsonwebtoken</groupId>
+        <artifactId>jjwt-impl</artifactId>
+        <version>0.11.5</version>
+        <scope>runtime</scope>
+    </dependency>
+
+    <dependency>
+        <groupId>io.jsonwebtoken</groupId>
+        <artifactId>jjwt-jackson</artifactId>
+        <version>0.11.5</version>
+        <scope>runtime</scope>
+    </dependency>
+	
 	</dependencies>
 
 	<build>

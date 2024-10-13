@@ -1,0 +1,1 @@
+A Model is known as Entity in Java.

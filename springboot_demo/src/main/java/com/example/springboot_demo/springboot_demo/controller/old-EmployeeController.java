@@ -2,7 +2,7 @@ package com.example.springboot_demo.springboot_demo.controller;
 
 import org.springframework.web.bind.annotation.RestController;
 
-import com.example.springboot_demo.springboot_demo.model.Employee;
+import com.example.springboot_demo.springboot_demo.entity.Employee;
 import com.example.springboot_demo.springboot_demo.service.EmployeeService;
 
 import java.util.List;
