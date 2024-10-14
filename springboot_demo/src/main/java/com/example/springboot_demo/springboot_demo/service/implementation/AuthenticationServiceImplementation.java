@@ -17,6 +17,7 @@ import com.example.springboot_demo.springboot_demo.service.OtpService;
 import jakarta.mail.MessagingException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
@@ -139,25 +140,29 @@ public class AuthenticationServiceImplementation implements AuthenticationServic
             Employee employee = employeeRepository.findByEmail(emailEntered).orElseThrow(
                     ResourceNotFoundException::new
             );
-            String cachedOtp = cacheManager.getCache("employee").get(emailEntered, String.class);
-            if (cachedOtp == null) {
-                log.info("the otp is not present in cache memory, it has expired for employee {}, kindly retry and Register", emailEntered);
-                return new ResponseEntity<>(GeneralAPIResponse.builder().message("Otp has been expired for employee " + emailEntered).build(), HttpStatus.REQUEST_TIMEOUT);
-            } else if (!otpEntered.equals(cachedOtp)) {
-                log.info("the entered otp does not match the otp Stored in cache for email {}", emailEntered);
-                return new ResponseEntity<>(GeneralAPIResponse.builder().message("Incorrect otp has been entered").build(), HttpStatus.BAD_REQUEST);
-            } else {
-                employee.setIsVerified(true);
-                employeeRepository.save(employee);
-                log.info("the employee email {} is successfully verified", employee.isEnabled());
-                RegisterVerifyResponse jwtToken = jwtService.generateJwtToken(employee);
-                return new ResponseEntity<>(jwtToken, HttpStatus.CREATED);
-
+            Cache cache = cacheManager.getCache("employee");
+            if(cache != null) {
+                String cachedOtp = cache.get(emailEntered, String.class);
+                if (cachedOtp == null) {
+                    log.info("the otp is not present in cache memory, it has expired for employee {}, kindly retry and Register", emailEntered);
+                    return new ResponseEntity<>(GeneralAPIResponse.builder().message("Otp has been expired for employee " + emailEntered).build(), HttpStatus.REQUEST_TIMEOUT);
+                } else if (!otpEntered.equals(cachedOtp)) {
+                    log.info("the entered otp does not match the otp Stored in cache for email {}", emailEntered);
+                    return new ResponseEntity<>(GeneralAPIResponse.builder().message("Incorrect otp has been entered").build(), HttpStatus.BAD_REQUEST);
+                } else {
+                    // OTP provided is same as the one stored in cache memory
+                    employee.setIsVerified(true);
+                    employeeRepository.save(employee);
+                    log.info("the employee email {} is successfully verified", employee.isEnabled());
+                    RegisterVerifyResponse jwtToken = jwtService.generateJwtToken(employee);
+                    return new ResponseEntity<>(jwtToken, HttpStatus.CREATED);
+                }
             }
         } catch (ResourceNotFoundException ex) {
             log.info("employee with email {} not found in database", emailEntered);
             return new ResponseEntity<>(GeneralAPIResponse.builder().message("employee with this email does not exist").build(), HttpStatus.NOT_FOUND);
         }
+        return null;
     }
 
     // -----------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -194,13 +199,26 @@ public class AuthenticationServiceImplementation implements AuthenticationServic
     public ResponseEntity<?> resendOtp(ForgotPasswordRequest forgotPasswordRequest) {
         String email = forgotPasswordRequest.getEmail().trim().toLowerCase();
         try {
-            Employee employee = employeeRepository.findByEmail(email).orElseThrow(
+            // Employee employee = 
+            employeeRepository.findByEmail(email).orElseThrow(
                     ResourceNotFoundException::new
             );
-            if (cacheManager.getCache("employee").get(email, String.class) != null) {
-                log.info("the otp is already present in cache memory for employee {}, kindly retry after some time", email);
-                return new ResponseEntity<>(GeneralAPIResponse.builder().message("Kindly retry after 1 minute").build(), HttpStatus.TOO_MANY_REQUESTS);
+
+            Cache cache = cacheManager.getCache("employee");
+            if(cache != null) {
+                // Get the cached OTP, handling the case where the cache entry might be null
+                String cachedOtp = cache.get(email, String.class);
+                if (cachedOtp != null) {
+                    // OTP is already present, so log the info and return an appropriate response
+                    log.info("The OTP is already present in cache memory for employee {}, kindly retry after some time", email);
+                    return new ResponseEntity<>(GeneralAPIResponse.builder().message("Kindly retry after 1 minute").build(), HttpStatus.TOO_MANY_REQUESTS);
+                } else {
+                    // Handle case where OTP for this email is not in the cache (OTP can be generated)
+                    log.info("No OTP found in the cache for employee {}", email);
+                }
             }
+            else log.info("Employee not found in cache");
+            
             String otpToBeSend = otpService.getOtpForEmail(email);
             CompletableFuture<Integer> emailResponse= emailService.sendEmailWithRetry(email,otpToBeSend);
             if (emailResponse.get() == -1) {
@@ -230,23 +248,54 @@ public class AuthenticationServiceImplementation implements AuthenticationServic
         String email = registerVerifyRequest.getEmail().trim().toLowerCase();
         String otp = registerVerifyRequest.getOtp().trim();
         try {
-            Employee employee = employeeRepository.findByEmail(email).orElseThrow(
+            // Employee employee = 
+            employeeRepository.findByEmail(email).orElseThrow(
                     ResourceNotFoundException::new
             );
         } catch (ResourceNotFoundException ex) {
             log.info("employee with email {} not found in database ", email);
             return new ResponseEntity<>(GeneralAPIResponse.builder().message("iUser with this email does not exist").build(), HttpStatus.NOT_FOUND);
         }
-        String cachedOtp = cacheManager.getCache("employee").get(email, String.class);
-        if (cachedOtp == null) {
-            log.info("the otp is not present in cache memory, it has expired for employee {}, kindly retry", email);
-            return new ResponseEntity<>(GeneralAPIResponse.builder().message("Otp has been expired for employee " + email).build(), HttpStatus.REQUEST_TIMEOUT);
-        } else if (!otp.equals(cachedOtp)) {
-            log.info("entered otp does not match the otp Stored in cache for email {}", email);
-            return new ResponseEntity<>(GeneralAPIResponse.builder().message("Incorrect otp has been entered").build(), HttpStatus.BAD_REQUEST);
+        Cache cache = cacheManager.getCache("employee");
+        if(cache != null){
+            // Get the cached OTP, handling the case where the cache entry might be null
+            String cachedOtp = cache.get(email, String.class);
+            if (cachedOtp == null) {
+                // Handle case where the OTP has expired or is not present
+                log.info("The OTP is not present in cache memory or has expired for employee {}, kindly retry", email);
+                return new ResponseEntity<>(GeneralAPIResponse.builder()
+                        .message("OTP has expired for employee " + email)
+                        .build(), HttpStatus.REQUEST_TIMEOUT);
+            } else if (!otp.equals(cachedOtp)) {
+                // Handle case where the entered OTP does not match the cached OTP
+                log.info("The entered OTP does not match the OTP stored in cache for email {}", email);
+                return new ResponseEntity<>(GeneralAPIResponse.builder()
+                        .message("Incorrect OTP has been entered")
+                        .build(), HttpStatus.BAD_REQUEST);
+            } else {
+                // Handle case where the OTP is correct and verified
+                log.info("OTP verified successfully for employee {}, they can now change the password", email);
+                return new ResponseEntity<>(GeneralAPIResponse.builder()
+                        .message("OTP verified successfully, now you can change the password")
+                        .build(), HttpStatus.OK);
+            }
         } else {
-            return new ResponseEntity<>(GeneralAPIResponse.builder().message("otp verified successfully, now you can change the password").build(), HttpStatus.OK);
+            // Handle case where the "employee" cache does not exist
+            log.warn("Cache 'employee' does not exist, potential configuration issue");
+            return new ResponseEntity<>(GeneralAPIResponse.builder()
+                    .message("OTP cache not found for employee " + email)
+                    .build(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
+        // String cachedOtp = cacheManager.getCache("employee").get(email, String.class);
+        // if (cachedOtp == null) {
+        //     log.info("the otp is not present in cache memory, it has expired for employee {}, kindly retry", email);
+        //     return new ResponseEntity<>(GeneralAPIResponse.builder().message("Otp has been expired for employee " + email).build(), HttpStatus.REQUEST_TIMEOUT);
+        // } else if (!otp.equals(cachedOtp)) {
+        //     log.info("entered otp does not match the otp Stored in cache for email {}", email);
+        //     return new ResponseEntity<>(GeneralAPIResponse.builder().message("Incorrect otp has been entered").build(), HttpStatus.BAD_REQUEST);
+        // } else {
+        //     return new ResponseEntity<>(GeneralAPIResponse.builder().message("otp verified successfully, now you can change the password").build(), HttpStatus.OK);
+        // }
     }
 
     // -----------------------------------------------------------------------------------------------------------------------------------------------------------

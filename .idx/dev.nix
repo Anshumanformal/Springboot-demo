@@ -14,6 +14,7 @@
     pkgs.jdk19
     pkgs.docker
     pkgs.docker-compose
+    pkgs.maven
   ];
 
   # Sets environment variables in the workspace
